@@ -1,0 +1,193 @@
+#include <iostream>
+#include <chrono>
+#pragma GCC optimize(3)
+
+using namespace std;
+#define timePrint  std::cout\
+<< "Slow calculations took "\
+<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "μs ≈ "\
+<< std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms ≈ "\
+<< std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << "s.\n";
+
+static inline int add(int* addr, int delta)
+ {
+      int tmp = *addr;
+      *addr += delta;
+      return tmp;
+  }
+
+class matrix {
+
+private:
+
+    int column = 0;
+    int row = 0;
+    float **a2;
+    int count=0;
+    int* refcount;
+
+public:
+    ~matrix(){
+        if( *refcount  == 0 ) delete a2;
+        else add(refcount, -1);
+    }
+    matrix(int row, int column, float **a2){
+        refcount = (int*)(sizeof(a2) + sizeof(refcount));
+        *refcount = 1;
+        this->a2=a2;
+        this->row=row;
+        this->column=column;
+    }
+    matrix(int row, int column) {
+        refcount = (int*)(sizeof(a2) + sizeof(refcount));
+        *refcount = 1;
+        this->row = row;
+        this->column = column;
+        a2 = new float *[column];
+        for (int i = 0; i < column; i++)
+            a2[i] = new float[row];
+    }
+
+    matrix operator *(const matrix& m) {
+        int lengthM = m.row;
+        int widthM = m.column;
+        int lengthN = row;
+        int widthN = column;
+        matrix x(m.row, column);
+        if (widthM == lengthN) {
+            for (int i = 0; i < lengthM; ++i) {
+                for (int k = 0; k < widthM; ++k) {
+                    for (int j = 0; j < widthN; ++j) {
+                        x.a2[i][j] += m.a2[i][k] * a2[k][j];
+
+                    }
+                }
+            }
+        }
+        return x;
+    }
+    matrix &operator=(matrix &other);
+    friend ostream& operator <<(ostream& os, const matrix& x);
+    friend matrix operator *(const matrix& other, const float x) {
+        matrix result(other.row,other.column);
+        for(int i=0;i<other.row;i++){
+            for(int j=0; j<other.column;j++){
+                result.a2[i][j]=other.a2[i][j]*x;
+            }
+        }
+        return result;
+    }
+    friend matrix operator *(const float x, const matrix& other) {
+        matrix result(other.row,other.column);
+        for(int i=0;i<other.row;i++){
+            for(int j=0; j<other.column;j++){
+                result.a2[i][j]=other.a2[i][j]*x;
+            }
+        }
+        return result;
+    }
+
+    float **calculate(matrix m, matrix n) {
+        int lengthM = m.row;
+        int widthM = m.column;
+        int lengthN = n.row;
+        int widthN = n.column;
+        matrix x(m.row, n.column);
+
+        if (widthM == lengthN) {
+            for (int i = 0; i < lengthM; ++i) {
+                for (int j = 0; j < widthN; ++j) {
+                    for (int k = 0; k < widthM; ++k) {
+                        x.a2[i][j] += m.a2[i][k] * n.a2[k][j];
+
+                    }
+                }
+            }
+
+
+        } else{
+            cout<<"The size of the input matrices are wrong";
+            exit(0);
+        }
+
+
+        return x.a2;
+    }
+
+    float **calculate2(matrix m, matrix n) {
+        int lengthM = m.row;
+        int widthM = m.column;
+        int lengthN = n.row;
+        int widthN = n.column;
+        matrix x(m.row, n.column);
+
+        float s = 0;
+        if (widthM == lengthN) {
+            for (int i = 0; i < lengthM; ++i) {
+                for (int k = 0; k < widthM; ++k) {
+                    for (int j = 0; j < widthN; ++j) {
+                        x.a2[i][j] += m.a2[i][k] * n.a2[k][j];
+
+                    }
+                }
+            }
+        }
+
+        return x.a2;
+    }
+
+};
+
+
+ostream& operator <<(ostream& os, const matrix& x) {
+    for(int i=0;i<x.row;i++){
+        for(int j=0;j<x.column;j++){
+            cout<<x.a2[i][j]<<" ";
+        }
+        cout<<endl;
+    }
+}
+
+matrix &matrix::operator=(matrix &other) {
+    add(refcount, 1);
+    count++;
+    other.row=row;
+    other.column=column;
+    other.a2 = a2;
+    other.refcount=refcount;
+    other.count=count;
+}
+
+
+int main() {
+
+    float** a=new float*[3];
+
+    for(int i=0;i<3;i++){
+        a[i]=new float [3];
+    }
+
+    for(int i=0;i<3;i++){
+        for(int j=0;j<3;j++){
+            a[i][j]=1;
+        }
+    }
+    matrix x(3,3,a);
+
+
+    cout<<x;
+    cout<<endl;
+    matrix n=x;
+    cout<<n;
+
+
+    float **result;
+    matrix p(1000,1000);
+    
+    auto start = std::chrono::steady_clock::now();
+    result=x.calculate(x,x);
+    auto end = std::chrono::steady_clock::now();
+    timePrint
+
+    return 0;
+}
